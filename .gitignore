@@ -1,0 +1,5 @@
+
+/vendor
+/*.exe
+*.exe
+.DS_Store
