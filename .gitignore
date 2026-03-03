@@ -3,3 +3,6 @@
 /*.exe
 *.exe
 .DS_Store
+.env
+*.out
+tmp/
