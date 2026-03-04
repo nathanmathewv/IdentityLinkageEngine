@@ -23,6 +23,7 @@ func NewRouter(pool *pgxpool.Pool) http.Handler {
 	})
 
 	r.Post("/identify", handler.Identify(pool))
+	r.Post("/contacts", handler.Seed(pool))
 
 	return r
 }

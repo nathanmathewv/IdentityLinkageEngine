@@ -50,7 +50,7 @@ func (d *DSU) Add(id int, linkedID *int, email, phone *string, createdAt time.Ti
 }
 
 // Find returns the root of x with path compression.
-// Our DB enforces depth-1 chains (secondary always points directly to a primary),
+// DB enforces depth-1 chains (secondary always points directly to a primary),
 // so this rarely recurses more than once — but path compression keeps it correct
 // for any in-memory unions we perform before writing back.
 func (d *DSU) Find(x int) int {

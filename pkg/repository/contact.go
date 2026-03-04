@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 
 	"identitylinkageengine/pkg/models"
 )
@@ -12,23 +13,29 @@ import (
 // FetchContactGroup returns every contact related to the incoming email/phone:
 // direct matches, their parent primaries, and siblings under those same primaries.
 // FOR UPDATE locks the rows so concurrent requests block rather than race.
+// DISTINCT lives in the subquery because Postgres disallows FOR UPDATE + DISTINCT
+// in the same SELECT.
 func FetchContactGroup(ctx context.Context, tx pgx.Tx, email, phone *string) ([]models.Contact, error) {
 	query := `
-		SELECT DISTINCT c.id, c.phone_number, c.email, c.linked_id,
+		SELECT c.id, c.phone_number, c.email, c.linked_id,
 		       c.link_precedence, c.created_at, c.updated_at, c.deleted_at
 		FROM contact c
-		WHERE c.deleted_at IS NULL AND (
-			($1::text IS NOT NULL AND c.email = $1)
-			OR ($2::text IS NOT NULL AND c.phone_number = $2)
-			OR c.id IN (
-				SELECT linked_id FROM contact
-				WHERE deleted_at IS NULL AND linked_id IS NOT NULL
-				AND (($1::text IS NOT NULL AND email = $1) OR ($2::text IS NOT NULL AND phone_number = $2))
-			)
-			OR c.linked_id IN (
-				SELECT id FROM contact
-				WHERE deleted_at IS NULL
-				AND (($1::text IS NOT NULL AND email = $1) OR ($2::text IS NOT NULL AND phone_number = $2))
+		WHERE c.id IN (
+			SELECT DISTINCT c2.id
+			FROM contact c2
+			WHERE c2.deleted_at IS NULL AND (
+				($1::text IS NOT NULL AND c2.email = $1)
+				OR ($2::text IS NOT NULL AND c2.phone_number = $2)
+				OR c2.id IN (
+					SELECT linked_id FROM contact
+					WHERE deleted_at IS NULL AND linked_id IS NOT NULL
+					AND (($1::text IS NOT NULL AND email = $1) OR ($2::text IS NOT NULL AND phone_number = $2))
+				)
+				OR c2.linked_id IN (
+					SELECT id FROM contact
+					WHERE deleted_at IS NULL
+					AND (($1::text IS NOT NULL AND email = $1) OR ($2::text IS NOT NULL AND phone_number = $2))
+				)
 			)
 		)
 		ORDER BY c.created_at ASC
@@ -96,6 +103,26 @@ func FetchAllUnderPrimary(ctx context.Context, tx pgx.Tx, primaryID int) ([]mode
 	defer rows.Close()
 
 	return scanRows(rows)
+}
+
+// SeedContact inserts a row with caller-supplied values for every field,
+// including id and timestamps. Used by the seed endpoint to set up exact
+// test fixtures that match the spec examples.
+// OVERRIDING SYSTEM VALUE lets us bypass the SERIAL sequence and set the id manually.
+func SeedContact(ctx context.Context, db *pgxpool.Pool, c models.Contact) (models.Contact, error) {
+	var out models.Contact
+	err := db.QueryRow(ctx, `
+		INSERT INTO contact (id, phone_number, email, linked_id, link_precedence, created_at, updated_at, deleted_at)
+		OVERRIDING SYSTEM VALUE
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		RETURNING id, phone_number, email, linked_id, link_precedence, created_at, updated_at, deleted_at`,
+		c.ID, c.PhoneNumber, c.Email, c.LinkedID, c.LinkPrecedence, c.CreatedAt, c.UpdatedAt, c.DeletedAt,
+	).Scan(
+		&out.ID, &out.PhoneNumber, &out.Email,
+		&out.LinkedID, &out.LinkPrecedence,
+		&out.CreatedAt, &out.UpdatedAt, &out.DeletedAt,
+	)
+	return out, err
 }
 
 func scanRows(rows pgx.Rows) ([]models.Contact, error) {

@@ -10,12 +10,12 @@ const (
 )
 
 type Contact struct {
-	ID             int
-	PhoneNumber    *string
-	Email          *string
-	LinkedID       *int
-	LinkPrecedence LinkPrecedence
-	CreatedAt      time.Time
-	UpdatedAt      time.Time
-	DeletedAt      *time.Time
+	ID             int            `json:"id"`
+	PhoneNumber    *string        `json:"phoneNumber"`
+	Email          *string        `json:"email"`
+	LinkedID       *int           `json:"linkedId"`
+	LinkPrecedence LinkPrecedence `json:"linkPrecedence"`
+	CreatedAt      time.Time      `json:"createdAt"`
+	UpdatedAt      time.Time      `json:"updatedAt"`
+	DeletedAt      *time.Time     `json:"deletedAt"`
 }
