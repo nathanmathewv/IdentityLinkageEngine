@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: identity-engine
+    env: docker
+    dockerfilePath: ./deployments/docker/Dockerfile
+    dockerContext: .
+    plan: free
+    envVars:
+      - key: APP_PORT
+        value: "8080"
+      - key: DB_HOST
+        fromDatabase:
+          name: identity-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: identity-db
+          property: port
+      - key: DB_USER
+        fromDatabase:
+          name: identity-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: identity-db
+          property: password
+      - key: DB_NAME
+        fromDatabase:
+          name: identity-db
+          property: database
+      # Render's managed Postgres requires SSL
+      - key: DB_SSLMODE
+        value: require
+
+databases:
+  - name: identity-db
+    plan: free

@@ -23,6 +23,11 @@ func main() {
 
 	ctx := context.Background()
 
+	if err := db.RunMigrations("db/migrations"); err != nil {
+		log.Fatalf("migrations failed: %v", err)
+	}
+	log.Println("migrations up to date")
+
 	pool, err := db.NewPool(ctx)
 	if err != nil {
 		log.Fatalf("database init failed: %v", err)

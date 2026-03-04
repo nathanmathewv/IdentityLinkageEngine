@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Identity Linkage Engine</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 32px 16px;
+    }
+
+    .container {
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      letter-spacing: 0.01em;
+      color: #ffffff;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: #555;
+      margin-bottom: 28px;
+    }
+
+    .card {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .row {
+      display: flex;
+      gap: 10px;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    select, button {
+      height: 38px;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      cursor: pointer;
+    }
+
+    select {
+      background: #0d1117;
+      color: #58a6ff;
+      border: 1px solid #30363d;
+      padding: 0 12px;
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+    }
+
+    select:focus { outline: none; border-color: #58a6ff; }
+
+    button#sendBtn {
+      background: #238636;
+      color: #fff;
+      border: 1px solid #2ea043;
+      padding: 0 20px;
+      font-weight: 600;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    button#sendBtn:hover { background: #2ea043; }
+    button#sendBtn:disabled { background: #1a3a20; color: #6e8c6e; cursor: not-allowed; }
+
+    textarea {
+      width: 100%;
+      background: #0d1117;
+      color: #c9d1d9;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.82rem;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 120px;
+    }
+
+    textarea:focus { outline: none; border-color: #58a6ff; }
+
+    .log-header {
+      font-size: 0.75rem;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .entry {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 14px 16px;
+      margin-bottom: 12px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+
+    .entry-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .entry-endpoint {
+      font-family: 'Courier New', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #58a6ff;
+    }
+
+    .entry-time {
+      font-size: 0.72rem;
+      color: #555;
+    }
+
+    .entry-status {
+      font-size: 0.78rem;
+      margin-bottom: 8px;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .badge {
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+
+    .badge-ok { background: #1a3a20; color: #3fb950; border: 1px solid #2ea04366; }
+    .badge-err { background: #3d1215; color: #f85149; border: 1px solid #f8514966; }
+    .badge-pending { background: #1a2233; color: #58a6ff; border: 1px solid #58a6ff44; }
+
+    .elapsed {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: #8b949e;
+    }
+
+    .wake-msg {
+      font-size: 0.75rem;
+      color: #e3b341;
+      margin-top: 4px;
+    }
+
+    .response-body {
+      background: #161b22;
+      border: 1px solid #21262d;
+      border-radius: 6px;
+      padding: 10px 12px;
+      font-family: 'Courier New', monospace;
+      font-size: 0.78rem;
+      line-height: 1.6;
+      color: #c9d1d9;
+      white-space: pre-wrap;
+      word-break: break-all;
+      margin-top: 6px;
+      max-height: 360px;
+      overflow-y: auto;
+    }
+
+    .empty-state {
+      text-align: center;
+      color: #333;
+      font-size: 0.8rem;
+      padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Identity Linkage Engine</h1>
+    <p class="subtitle">Bitespeed identity reconciliation API explorer</p>
+
+    <div class="card">
+      <div class="row">
+        <select id="endpoint">
+          <option value="/identify">POST /identify</option>
+          <option value="/contacts">POST /contacts</option>
+        </select>
+        <button id="sendBtn">Send</button>
+      </div>
+      <textarea id="body" spellcheck="false"></textarea>
+    </div>
+
+    <div class="log-header">Response Log</div>
+    <div id="log">
+      <div class="empty-state">No requests yet.</div>
+    </div>
+  </div>
+
+  <script>
+    const EXAMPLES = {
+      '/identify': JSON.stringify({ email: "george@hillvalley.edu", phoneNumber: "919191" }, null, 2),
+      '/contacts': JSON.stringify({
+        id: 1,
+        email: "george@hillvalley.edu",
+        phoneNumber: "919191",
+        linkPrecedence: "primary",
+        createdAt: "2023-04-01T00:00:00.000Z",
+        updatedAt: "2023-04-01T00:00:00.000Z"
+      }, null, 2)
+    };
+
+    const endpointSel = document.getElementById('endpoint');
+    const bodyTA      = document.getElementById('body');
+    const sendBtn     = document.getElementById('sendBtn');
+    const log         = document.getElementById('log');
+
+    bodyTA.value = EXAMPLES[endpointSel.value];
+    endpointSel.addEventListener('change', () => {
+      bodyTA.value = EXAMPLES[endpointSel.value];
+    });
+
+    function fmt(ms) {
+      return (ms / 1000).toFixed(2) + 's';
+    }
+
+    function fmtTime(d) {
+      return d.toLocaleTimeString('en-US', { hour12: false }) +
+        '.' + String(d.getMilliseconds()).padStart(3, '0');
+    }
+
+    function syntaxHighlight(json) {
+      return json
+        .replace(/("(\\u[\da-fA-F]{4}|\\[^u]|[^\\"])*"(\s*:)?)/g, m =>
+          m.endsWith(':') ? `<span style="color:#79c0ff">${m}</span>` : `<span style="color:#a5d6ff">${m}</span>`)
+        .replace(/\b(true|false)\b/g, '<span style="color:#ff7b72">$1</span>')
+        .replace(/\b(null)\b/g, '<span style="color:#8b949e">$1</span>')
+        .replace(/\b(-?\d+(?:\.\d+)?)\b/g, '<span style="color:#79c0ff">$1</span>');
+    }
+
+    sendBtn.addEventListener('click', async () => {
+      const endpoint = endpointSel.value;
+      const rawBody  = bodyTA.value.trim();
+
+      let parsed;
+      try { parsed = JSON.parse(rawBody); }
+      catch {
+        alert('Invalid JSON in request body.');
+        return;
+      }
+
+      // remove empty state
+      const empty = log.querySelector('.empty-state');
+      if (empty) empty.remove();
+
+      const sentAt  = new Date();
+      const entryEl = document.createElement('div');
+      entryEl.className = 'entry';
+
+      entryEl.innerHTML = `
+        <div class="entry-meta">
+          <span class="entry-endpoint">POST ${endpoint}</span>
+          <span class="entry-time">sent at ${fmtTime(sentAt)}</span>
+        </div>
+        <div class="entry-status">
+          <span class="badge badge-pending" id="badge-${sentAt.getTime()}">PENDING</span>
+          <span class="elapsed" id="elapsed-${sentAt.getTime()}">0.00s</span>
+        </div>
+        <div id="wake-${sentAt.getTime()}"></div>
+        <div id="resp-${sentAt.getTime()}"></div>
+      `;
+
+      log.prepend(entryEl);
+
+      const badgeEl   = document.getElementById(`badge-${sentAt.getTime()}`);
+      const elapsedEl = document.getElementById(`elapsed-${sentAt.getTime()}`);
+      const wakeEl    = document.getElementById(`wake-${sentAt.getTime()}`);
+      const respEl    = document.getElementById(`resp-${sentAt.getTime()}`);
+
+      sendBtn.disabled = true;
+
+      let wakeShown = false;
+      const timer = setInterval(() => {
+        const ms = Date.now() - sentAt.getTime();
+        elapsedEl.textContent = fmt(ms);
+        if (ms > 4000 && !wakeShown) {
+          wakeShown = true;
+          wakeEl.innerHTML = `<div class="wake-msg">&#9888; Service is waking up from sleep &mdash; first request on free tier can take ~30s&hellip;</div>`;
+        }
+      }, 100);
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(parsed)
+        });
+
+        clearInterval(timer);
+        const ms = Date.now() - sentAt.getTime();
+        elapsedEl.textContent = fmt(ms);
+        wakeEl.innerHTML = '';
+
+        let text = await res.text();
+        let pretty;
+        try {
+          pretty = syntaxHighlight(JSON.stringify(JSON.parse(text), null, 2));
+        } catch {
+          pretty = text;
+        }
+
+        const ok = res.status >= 200 && res.status < 300;
+        badgeEl.className  = `badge ${ok ? 'badge-ok' : 'badge-err'}`;
+        badgeEl.textContent = res.status.toString();
+
+        respEl.innerHTML = `<div class="response-body">${pretty}</div>`;
+      } catch (err) {
+        clearInterval(timer);
+        const ms = Date.now() - sentAt.getTime();
+        elapsedEl.textContent = fmt(ms);
+        wakeEl.innerHTML = '';
+        badgeEl.className  = 'badge badge-err';
+        badgeEl.textContent = 'ERR';
+        respEl.innerHTML = `<div class="response-body" style="color:#f85149">${err.message}</div>`;
+      } finally {
+        sendBtn.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>

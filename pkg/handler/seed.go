@@ -15,14 +15,14 @@ import (
 // fixtures — including custom IDs, timestamps, and linkage — to set up test
 // scenarios without relying on the sequence or wall clock.
 type seedRequest struct {
-	ID             int                     `json:"id"`
-	PhoneNumber    *string                 `json:"phoneNumber"`
-	Email          *string                 `json:"email"`
-	LinkedID       *int                    `json:"linkedId"`
-	LinkPrecedence models.LinkPrecedence   `json:"linkPrecedence"`
-	CreatedAt      time.Time               `json:"createdAt"`
-	UpdatedAt      time.Time               `json:"updatedAt"`
-	DeletedAt      *time.Time              `json:"deletedAt"`
+	ID             int                   `json:"id"`
+	PhoneNumber    *string               `json:"phoneNumber"`
+	Email          *string               `json:"email"`
+	LinkedID       *int                  `json:"linkedId"`
+	LinkPrecedence models.LinkPrecedence `json:"linkPrecedence"`
+	CreatedAt      time.Time             `json:"createdAt"`
+	UpdatedAt      time.Time             `json:"updatedAt"`
+	DeletedAt      *time.Time            `json:"deletedAt"`
 }
 
 func Seed(pool *pgxpool.Pool) http.HandlerFunc {
