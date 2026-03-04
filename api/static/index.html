@@ -213,27 +213,10 @@
   </div>
 
   <script>
-    const EXAMPLES = {
-      '/identify': JSON.stringify({ email: "george@hillvalley.edu", phoneNumber: "919191" }, null, 2),
-      '/contacts': JSON.stringify({
-        id: 1,
-        email: "george@hillvalley.edu",
-        phoneNumber: "919191",
-        linkPrecedence: "primary",
-        createdAt: "2023-04-01T00:00:00.000Z",
-        updatedAt: "2023-04-01T00:00:00.000Z"
-      }, null, 2)
-    };
-
     const endpointSel = document.getElementById('endpoint');
     const bodyTA      = document.getElementById('body');
     const sendBtn     = document.getElementById('sendBtn');
     const log         = document.getElementById('log');
-
-    bodyTA.value = EXAMPLES[endpointSel.value];
-    endpointSel.addEventListener('change', () => {
-      bodyTA.value = EXAMPLES[endpointSel.value];
-    });
 
     function fmt(ms) {
       return (ms / 1000).toFixed(2) + 's';
