@@ -6,6 +6,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"identitylinkageengine/pkg/handler"
 )
 
 func NewRouter(pool *pgxpool.Pool) http.Handler {
@@ -20,8 +22,7 @@ func NewRouter(pool *pgxpool.Pool) http.Handler {
 		w.Write([]byte("ok"))
 	})
 
-	// identity routes will be registered here
-	// r.Post("/identify", handler.Identify(pool))
+	r.Post("/identify", handler.Identify(pool))
 
 	return r
 }
