@@ -57,7 +57,7 @@ Standard path-compressed Find. The DB enforces depth-1 chains (secondaries alway
 **Union(a, b)**
 Merges the sets of two contacts. The root with the **older** `createdAt` becomes the absolute primary. Ties broken by lower ID for stability.
 
-The `EmailMap`/`PhoneMap` dictionaries let the service immediately answer "which root currently owns this email?" and "which root currently owns this phone?" without scanning every contact in the group — this is the same pattern as the classic *Accounts Merge* problem.
+The `EmailMap`/`PhoneMap` dictionaries let the service immediately answer "which root currently owns this email?" and "which root currently owns this phone?" without scanning every contact in the group.
 
 ---
 
