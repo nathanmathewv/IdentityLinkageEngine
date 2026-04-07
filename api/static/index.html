@@ -16,8 +16,29 @@
     }
 
     .container {
-      max-width: 760px;
+      max-width: 1360px;
       margin: 0 auto;
+    }
+
+    .layout {
+      display: flex;
+      gap: 18px;
+      align-items: stretch;
+      flex-wrap: wrap;
+    }
+
+    .left-pane,
+    .right-pane {
+      min-width: 0;
+      flex: 1 1 560px;
+    }
+
+    .left-pane {
+      flex-grow: 1.15;
+    }
+
+    .right-pane {
+      flex-grow: 1;
     }
 
     h1 {
@@ -188,6 +209,65 @@
       font-size: 0.8rem;
       padding: 20px 0;
     }
+
+    .section-title {
+      font-size: 0.92rem;
+      color: #c9d1d9;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    .help-text {
+      font-size: 0.8rem;
+      color: #8b949e;
+      line-height: 1.7;
+      margin-bottom: 10px;
+    }
+
+    .help-list {
+      padding-left: 16px;
+      margin: 0 0 12px;
+      color: #c9d1d9;
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+
+    .help-list li { margin-bottom: 4px; }
+
+    .mini-label {
+      display: inline-block;
+      font-family: 'Courier New', monospace;
+      font-size: 0.72rem;
+      color: #58a6ff;
+      margin-bottom: 6px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .example-block {
+      background: #0d1117;
+      border: 1px solid #30363d;
+      border-radius: 6px;
+      padding: 10px 12px;
+      color: #c9d1d9;
+      font-family: 'Courier New', monospace;
+      font-size: 0.77rem;
+      line-height: 1.6;
+      margin-bottom: 12px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    .response-card {
+      margin-bottom: 0;
+      min-height: 100%;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        flex-direction: column;
+      }
+    }
   </style>
 </head>
 <body>
@@ -195,20 +275,65 @@
     <h1>Identity Linkage Engine</h1>
     <p class="subtitle">Contact identity reconciliation API</p>
 
-    <div class="card">
-      <div class="row">
-        <select id="endpoint">
-          <option value="/identify">POST /identify</option>
-          <option value="/contacts">POST /contacts</option>
-        </select>
-        <button id="sendBtn">Send</button>
-      </div>
-      <textarea id="body" spellcheck="false"></textarea>
-    </div>
+    <div class="layout">
+      <div class="left-pane">
+        <div class="card">
+          <div class="row">
+            <select id="endpoint">
+              <option value="/identify">POST /identify</option>
+              <option value="/contacts">POST /contacts</option>
+            </select>
+            <button id="sendBtn">Send</button>
+          </div>
+          <textarea id="body" spellcheck="false"></textarea>
+        </div>
 
-    <div class="log-header">Response Log</div>
-    <div id="log">
-      <div class="empty-state">No requests yet.</div>
+        <div class="card">
+          <div class="section-title">How to Use</div>
+          <p class="help-text">
+            This page lets you send JSON requests to the identity reconciliation API and inspect merged contact results.
+          </p>
+
+          <ul class="help-list">
+            <li>Pick an endpoint from the dropdown.</li>
+            <li>Paste a JSON request body in the editor.</li>
+            <li>Click <strong>Send</strong> and read status + response in the log.</li>
+          </ul>
+
+          <div class="mini-label">POST /identify (example)</div>
+          <pre class="example-block">{
+  "email": "mcfly@hillvalley.edu",
+  "phoneNumber": "123456"
+}</pre>
+
+          <div class="mini-label">POST /contacts (seed/testing example)</div>
+          <pre class="example-block">{
+  "id": 11,
+  "email": "george@hillvalley.edu",
+  "phoneNumber": "919191",
+  "linkPrecedence": "primary",
+  "createdAt": "2023-04-01T00:00:00.000Z",
+  "updatedAt": "2023-04-01T00:00:00.000Z"
+}</pre>
+
+          <div class="section-title" style="font-size:0.84rem;margin-top:6px;">Fundamental System</div>
+          <ul class="help-list" style="margin-bottom:0;">
+            <li>Contacts are grouped under one oldest <strong>primary</strong>; newer linked records are <strong>secondary</strong>.</li>
+            <li>Each <code>/identify</code> call builds an in-memory DSU (union-find) from matching rows.</li>
+            <li>If email and phone belong to different groups, the groups are merged and the older primary survives.</li>
+            <li>When a new email or phone appears, a new secondary record is created under the resolved primary.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="right-pane">
+        <div class="card response-card">
+          <div class="log-header">Response Log</div>
+          <div id="log">
+            <div class="empty-state">No requests yet.</div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -217,6 +342,33 @@
     const bodyTA      = document.getElementById('body');
     const sendBtn     = document.getElementById('sendBtn');
     const log         = document.getElementById('log');
+
+    const requestTemplates = {
+      '/identify': {
+        email: 'mcfly@hillvalley.edu',
+        phoneNumber: '123456'
+      },
+      '/contacts': {
+        id: 11,
+        email: 'george@hillvalley.edu',
+        phoneNumber: '919191',
+        linkPrecedence: 'primary',
+        createdAt: '2023-04-01T00:00:00.000Z',
+        updatedAt: '2023-04-01T00:00:00.000Z'
+      }
+    };
+
+    function setTemplateForEndpoint(endpoint) {
+      const template = requestTemplates[endpoint];
+      if (!template) return;
+      bodyTA.value = JSON.stringify(template, null, 2);
+    }
+
+    endpointSel.addEventListener('change', () => {
+      setTemplateForEndpoint(endpointSel.value);
+    });
+
+    setTemplateForEndpoint(endpointSel.value);
 
     function fmt(ms) {
       return (ms / 1000).toFixed(2) + 's';
